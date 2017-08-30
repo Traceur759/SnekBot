@@ -1,57 +1,45 @@
 import discord
-from discord.ext import commands
-import random
+from time import sleep
+from random import randint
 
 description = '''An example bot to showcase the discord.ext.commands extension
 module.
 There are a number of utility commands being showcased here.'''
-bot = commands.Bot(command_prefix='-', description=description)
+client = discord.Client()
+messages = []
 
 
-@bot.event
+@client.event
 async def on_ready():
     print('Logged in as')
-    print(bot.user.name)
-    print(bot.user.id)
+    print(client.user.name)
+    print(client.user.id)
     print('------')
 
 
-@bot.command(description='For when you wanna settle the score some other way')
-async def choose(*choices: str):
-    """Chooses between multiple choices."""
-    await bot.say(random.choice(choices))
+@client.event
+async def on_message(message):
+    if message.content.startswith("-"):
+        global messages
+        valid = False
+        print("command detected")
+        if message.content == "-clear":
+            msg = await client.send_message(message.channel, 'Clearing...')
+            messages.append(msg)
+            for msg in messages:
+                await client.delete_message(msg)
+            await client.delete_message(message)
+            deleted = len(messages)
+            msg = await client.send_message(message.channel, 'Deleted ' + str(deleted) + ' messages')
+            messages.append(msg)
+            messages = []
+        elif message.content == "-roll":
+            valid = True
+            rand = randint(1, 6)
+            print("roll called")
+            msg = await client.send_message(message.channel,rand)
+            messages.append(msg)
+        if valid:
+            messages.append(message)
 
-
-@bot.command()
-async def repeat(times: int, content='repeating...'):
-    """Repeats a message multiple times."""
-    for i in range(times):
-        await bot.say(content)
-
-
-@bot.command()
-async def joined(member: discord.Member):
-    """Says when a member joined."""
-    await bot.say('{0.name} joined in {0.joined_at}'.format(member))
-
-
-@bot.group(pass_context=True)
-async def cool(ctx):
-    """Says if a user is cool.
-    In reality this just checks if a subcommand is being invoked.
-    """
-    if ctx.invoked_subcommand is None:
-        await bot.say('No, {0.subcommand_passed} is not cool'.format(ctx))
-
-
-@cool.command(name='bot')
-async def _bot():
-    """Is the bot cool?"""
-    await bot.say('Well, fuck you for now. I am not implemented yet. Have not a nice day')
-
-@bot.command()
-async def work():
-    """Is the bot cool?"""
-    await bot.say('Well, fuck you for now. I am not implemented yet. Have not a nice day')
-
-bot.run('MzUyNTA2MDUxMTk2NjE2NzA1.DIiLpw.O3l5oFACQdpSkzkOZWHWlRftAlE')
+client.run('token')
